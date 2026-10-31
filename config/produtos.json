@@ -1,0 +1,58 @@
+{
+  "configuracoes": {
+    "probabilidade_link": 0.4,
+    "max_caracteres": 500,
+    "partes_min": 4,
+    "partes_max": 15,
+    "pausa_entre_partes_seg": 3,
+    "idioma": "pt-BR",
+    "aviso_afiliado": "(link de afiliado)",
+    "evitar_repetir_ultimos": 3,
+    "temas_sem_link": [
+      "um mal-entendido engraçado no trabalho",
+      "uma lembrança de infância com a avó",
+      "uma conversa estranha com um desconhecido no ônibus",
+      "o dia em que tudo deu errado e acabou dando certo"
+    ],
+    "estilo": "narrativa em primeira pessoa, frases curtas, gancho forte na primeira linha, final que deixa curiosidade ou emoção, sem clichês de vendedor"
+  },
+  "produtos": [
+    {
+      "id": "fone-bluetooth",
+      "ativo": true,
+      "tipo": "eletrônico",
+      "nome": "Fone de ouvido Bluetooth",
+      "loja": "Amazon",
+      "link": "https://amzn.to/EXEMPLO1",
+      "peso": 2,
+      "situacoes": [
+        "uma viagem longa de ônibus em que o silêncio salvou o dia",
+        "treinar de manhã cedo e finalmente ouvir aquele podcast"
+      ]
+    },
+    {
+      "id": "livro-habitos",
+      "ativo": true,
+      "tipo": "livro",
+      "nome": "Livro sobre hábitos",
+      "loja": "Amazon",
+      "link": "https://amzn.to/EXEMPLO2",
+      "peso": 1,
+      "situacoes": [
+        "a tentativa número 12 de criar uma rotina e o que finalmente mudou"
+      ]
+    },
+    {
+      "id": "garrafa-termica",
+      "ativo": true,
+      "tipo": "casa",
+      "nome": "Garrafa térmica",
+      "loja": "Shopee",
+      "link": "https://s.shopee.com.br/EXEMPLO3",
+      "peso": 1,
+      "situacoes": [
+        "o café que ainda estava quente depois de um dia inteiro fora"
+      ]
+    }
+  ]
+}

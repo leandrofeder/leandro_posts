@@ -1,0 +1,11 @@
+{
+  "name": "bot-historias",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node src/index.js",
+    "post": "DRY_RUN=false node src/index.js"
+  }
+}

@@ -1,0 +1,31 @@
+name: Postar história no Threads
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # 09:00 (Brasília)
+    - cron: "0 22 * * *"   # 19:00 (Brasília)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node src/index.js
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          DRY_RUN: ${{ vars.DRY_RUN || 'true' }}
+      - name: Salvar histórico
+        run: |
+          git config user.name "bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/historico.json
+          git diff --staged --quiet || (git commit -m "atualiza histórico" && git push)
