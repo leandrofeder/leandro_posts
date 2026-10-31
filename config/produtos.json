@@ -18,40 +18,107 @@
   },
   "produtos": [
     {
-      "id": "fone-bluetooth",
+      "id": "parafusadeira-48v",
+      "ativo": true,
+      "tipo": "ferramenta",
+      "nome": "Parafusadeira e furadeira sem fio 48V com 2 baterias",
+      "loja": "Mercado Livre",
+      "link": "https://meli.la/1eAjS5z",
+      "peso": 1,
+      "situacoes": [
+        "o sábado em que decidi montar sozinho um móvel e a bateria acabou no meio",
+        "a prateleira torta que eu jurava que ia arrumar e adiei por um ano"
+      ]
+    },
+    {
+      "id": "power-bank-10000",
       "ativo": true,
       "tipo": "eletrônico",
-      "nome": "Fone de ouvido Bluetooth",
-      "loja": "Amazon",
-      "link": "https://amzn.to/EXEMPLO1",
+      "nome": "Carregador portátil (power bank) 10000mAh com saídas Tipo-C e Lightning",
+      "loja": "Shopee",
+      "link": "https://s.shopee.com.br/7puSLEHfG5?share_channel_code=1",
+      "peso": 1,
+      "situacoes": [
+        "o dia em que o celular morreu longe de casa bem na hora de uma mensagem importante",
+        "um aeroporto lotado, uma única tomada e uma fila de desconhecidos"
+      ]
+    },
+    {
+      "id": "creatina-dark-lab-variados",
+      "ativo": true,
+      "tipo": "suplemento",
+      "nome": "Creatina monohidratada pura Dark Lab (vários tamanhos)",
+      "loja": "Shopee",
+      "link": "https://s.shopee.com.br/60So9pQCxB?share_channel_code=1",
+      "peso": 1,
+      "situacoes": [
+        "a volta para a academia depois de meses parado e a rotina de treino que finalmente pegou",
+        "o amigo que mudou de hábitos aos poucos e eu só percebi meses depois"
+      ]
+    },
+    {
+      "id": "creatina-dark-lab-300g",
+      "ativo": true,
+      "tipo": "suplemento",
+      "nome": "Creatina monohidratada pura Dark Lab 300g",
+      "loja": "Shopee",
+      "link": "https://s.shopee.com.br/2BG5aHhUen?share_channel_code=1",
+      "peso": 1,
+      "situacoes": [
+        "a primeira semana de treino em que quase desisti na terça-feira",
+        "a gaveta da cozinha cheia de suplementos que eu comprava e nunca usava"
+      ]
+    },
+    {
+      "id": "copo-termico-1200ml",
+      "ativo": true,
+      "tipo": "casa",
+      "nome": "Copo térmico grande 1200ml com alça e canudo em aço inoxidável",
+      "loja": "Shopee",
+      "link": "https://s.shopee.com.br/3VlTBC9Na1?share_channel_code=1",
+      "peso": 1,
+      "situacoes": [
+        "o dia inteiro na rua e a água que continuou gelada até a noite",
+        "a promessa de beber mais água que eu fazia toda segunda-feira e nunca cumpria"
+      ]
+    },
+    {
+      "id": "fone-bluetooth-anc",
+      "ativo": true,
+      "tipo": "eletrônico",
+      "nome": "Fone de ouvido sem fio Bluetooth com cancelamento de ruído",
+      "loja": "Shopee",
+      "link": "https://s.shopee.com.br/8pmzWyP56U?share_channel_code=1",
       "peso": 2,
       "situacoes": [
         "uma viagem longa de ônibus em que o silêncio salvou o dia",
-        "treinar de manhã cedo e finalmente ouvir aquele podcast"
+        "o escritório barulhento e o dia em que finalmente consegui me concentrar"
       ]
     },
     {
-      "id": "livro-habitos",
+      "id": "jogo-lencol-queen",
       "ativo": true,
-      "tipo": "livro",
-      "nome": "Livro sobre hábitos",
-      "loja": "Amazon",
-      "link": "https://amzn.to/EXEMPLO2",
+      "tipo": "cama e banho",
+      "nome": "Jogo de lençol 400 fios ponto palito cama queen, 3 peças",
+      "loja": "Mercado Livre",
+      "link": "https://meli.la/2w49vwj",
       "peso": 1,
       "situacoes": [
-        "a tentativa número 12 de criar uma rotina e o que finalmente mudou"
+        "a noite em que dormi como não dormia há meses depois de trocar a cama",
+        "a visita inesperada em casa e o quarto de hóspedes que não estava pronto"
       ]
     },
     {
-      "id": "garrafa-termica",
+      "id": "percarbonato-tira-manchas",
       "ativo": true,
-      "tipo": "casa",
-      "nome": "Garrafa térmica",
+      "tipo": "limpeza",
+      "nome": "Percarbonato 100% puro, tira manchas de roupas brancas e coloridas",
       "loja": "Shopee",
-      "link": "https://s.shopee.com.br/EXEMPLO3",
+      "link": "https://s.shopee.com.br/3VlTAyWQVz?share_channel_code=1",
       "peso": 1,
       "situacoes": [
-        "o café que ainda estava quente depois de um dia inteiro fora"
+        "a camisa branca favorita manchada na véspera de uma entrevista",
+        "a dica da avó para salvar roupa que todo mundo dava como perdida"
       ]
     }
   ]
