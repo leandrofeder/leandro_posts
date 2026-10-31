@@ -5,6 +5,8 @@
     "partes_min": 4,
     "partes_max": 15,
     "pausa_entre_partes_seg": 3,
+    "modelos": ["gemini-3.8-flash", "gemini-3.5-flash-lite"],
+    "max_tokens": 8192,
     "idioma": "pt-BR",
     "aviso_afiliado": "(link de afiliado)",
     "evitar_repetir_ultimos": 3,

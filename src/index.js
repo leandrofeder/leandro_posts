@@ -7,8 +7,34 @@ const RAIZ = path.join(__dirname, "..");
 const CONFIG_PATH = path.join(RAIZ, "config", "produtos.json");
 const HISTORICO_PATH = path.join(RAIZ, "data", "historico.json");
 
-const DRY_RUN = process.env.DRY_RUN !== "false"; // padrão: só gera rascunho
-const { MISTRAL_API_KEY, THREADS_USER_ID, THREADS_ACCESS_TOKEN } = process.env;
+// Carrega o arquivo .env (o Node não faz isso sozinho). Variáveis já definidas no
+// sistema (ex.: secrets do GitHub Actions) têm prioridade.
+function carregarEnv() {
+  try {
+    const txt = fs.readFileSync(path.join(RAIZ, ".env"), "utf8");
+    for (const linha of txt.split(/\r?\n/)) {
+      if (linha.trim().startsWith("#")) continue;
+      const m = linha.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+      if (!m) continue;
+      let valor = m[2];
+      if (
+        (valor.startsWith('"') && valor.endsWith('"')) ||
+        (valor.startsWith("'") && valor.endsWith("'"))
+      ) {
+        valor = valor.slice(1, -1);
+      }
+      if (!process.env[m[1]]) process.env[m[1]] = valor;
+    }
+  } catch {
+    // sem .env: segue só com as variáveis do sistema
+  }
+}
+carregarEnv();
+
+// Padrão: só gera rascunho. Publica com DRY_RUN=false ou com a flag --publicar.
+const DRY_RUN =
+  process.env.DRY_RUN !== "false" && !process.argv.includes("--publicar");
+const { GEMINI_API_KEY, THREADS_USER_ID, THREADS_ACCESS_TOKEN } = process.env;
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -76,23 +102,43 @@ function montarPrompt(cfg, { produto, tema }, limitePorParte) {
   return p;
 }
 
-async function chamarMistral(prompt) {
-  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+async function chamarGemini(prompt, modelo, maxTokens) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`;
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${MISTRAL_API_KEY}`,
+      "x-goog-api-key": GEMINI_API_KEY,
     },
     body: JSON.stringify({
-      model: "mistral-small-latest",
-      temperature: 0.9,
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt }],
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: maxTokens,
+        responseMimeType: "application/json",
+      },
     }),
   });
-  if (!res.ok) throw new Error(`Mistral ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const corpo = await res.text();
+    const erro = new Error(`Gemini ${res.status}: ${corpo}`);
+    erro.status = res.status;
+    // O Gemini informa quanto esperar no header ou no corpo ("retryDelay": "30s").
+    const ra =
+      Number(res.headers.get("retry-after")) ||
+      Number(corpo.match(/"retryDelay":\s*"(\d+(?:\.\d+)?)s"/)?.[1]) ||
+      0;
+    if (ra > 0) erro.retryAfterSeg = Math.ceil(ra);
+    throw erro;
+  }
   const data = await res.json();
-  return data.choices[0].message.content;
+  const cand = data.candidates?.[0];
+  const texto = (cand?.content?.parts ?? []).map((p) => p.text ?? "").join("");
+  if (!texto) {
+    const motivo = cand?.finishReason ?? data.promptFeedback?.blockReason ?? "desconhecido";
+    throw new Error(`Gemini não devolveu texto (motivo: ${motivo})`);
+  }
+  return texto;
 }
 
 // Corta no último espaço antes do limite, para não quebrar palavra.
@@ -107,10 +153,20 @@ async function gerarPartes(cfg, pauta, limitePorParte) {
   const c = cfg.configuracoes;
   const prompt = montarPrompt(cfg, pauta, limitePorParte);
 
-  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+  // Os limites do Gemini são por modelo: se um estourar, passa para o próximo da lista.
+  const modelos = c.modelos?.length
+    ? c.modelos
+    : ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+  const MAX_TENTATIVAS = Math.max(6, modelos.length * 2);
+  let idx = 0;
+  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+    const modelo = modelos[idx];
     try {
-      const bruto = await chamarMistral(prompt);
-      const partes = JSON.parse(bruto).partes;
+      console.log(`Gerando história com ${modelo} (tentativa ${tentativa})...`);
+      const bruto = await chamarGemini(prompt, modelo, c.max_tokens ?? 8192);
+      // Remove cercas de código (```json) caso o modelo as inclua.
+      const limpo = bruto.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      const partes = JSON.parse(limpo).partes;
       if (!Array.isArray(partes)) throw new Error("JSON sem o campo 'partes'");
       const limpas = partes
         .map((t) => String(t).trim())
@@ -119,10 +175,26 @@ async function gerarPartes(cfg, pauta, limitePorParte) {
       if (limpas.length < c.partes_min) throw new Error(`Poucas partes (${limpas.length})`);
       return limpas.slice(0, c.partes_max);
     } catch (e) {
-      console.warn(`Tentativa ${tentativa} falhou: ${e.message}`);
+      // Chave recusada: tentar de novo não adianta.
+      if ([401, 403].includes(e.status) || /API key not valid|API_KEY_INVALID/i.test(e.message)) {
+        throw new Error(`Chave do Gemini recusada. Confira GEMINI_API_KEY no .env. Detalhe: ${e.message}`);
+      }
+      console.warn(`Tentativa ${tentativa} falhou (${modelo}): ${e.message}`);
+      if (tentativa < MAX_TENTATIVAS) {
+        let espera = 2;
+        if (e.status) {
+          // Erro da API (limite, modelo indisponível...): tenta o próximo modelo.
+          // Só espera de verdade depois de ter passado por todos eles.
+          idx = (idx + 1) % modelos.length;
+          espera =
+            idx === 0 && e.status === 429 ? Math.max(e.retryAfterSeg ?? 0, 20) : 1;
+        }
+        console.warn(`Aguardando ${espera}s antes de tentar de novo...`);
+        await dormir(espera * 1000);
+      }
     }
   }
-  throw new Error("Não consegui gerar uma thread válida após 3 tentativas");
+  throw new Error(`Não consegui gerar uma thread válida após ${MAX_TENTATIVAS} tentativas`);
 }
 
 async function publicarParte(texto, respondeA) {
@@ -170,6 +242,15 @@ async function publicarThread(partes, pausaSeg) {
 }
 
 async function main() {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY vazia ou não encontrada. Preencha o arquivo .env (copie de .env.example), sem aspas nem espaços."
+    );
+  }
+  if (!DRY_RUN && (!THREADS_USER_ID || !THREADS_ACCESS_TOKEN)) {
+    throw new Error("THREADS_USER_ID e THREADS_ACCESS_TOKEN são obrigatórios para publicar.");
+  }
+
   const cfg = lerJson(CONFIG_PATH);
   if (!cfg) throw new Error("Não consegui ler config/produtos.json");
   const historico = lerJson(HISTORICO_PATH, []);

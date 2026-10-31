@@ -6,6 +6,6 @@
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node src/index.js",
-    "post": "DRY_RUN=false node src/index.js"
+    "post": "node src/index.js --publicar"
   }
 }
