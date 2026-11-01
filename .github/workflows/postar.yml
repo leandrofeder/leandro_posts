@@ -12,6 +12,7 @@ permissions:
 jobs:
   postar:
     runs-on: ubuntu-latest
+    environment: all   # secrets e variáveis estão no environment "all"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
