@@ -197,6 +197,35 @@ async function gerarPartes(cfg, pauta, limitePorParte) {
   throw new Error(`Não consegui gerar uma thread válida após ${MAX_TENTATIVAS} tentativas`);
 }
 
+// A Meta processa o container antes de aceitar a publicação (em média ~30s, segundo a doc).
+// Consulta o status até ficar FINISHED; se não confirmar a tempo, segue e tenta publicar.
+async function aguardarContainer(creationId, maxSeg = 60) {
+  const inicio = Date.now();
+  await dormir(5000);
+  while ((Date.now() - inicio) / 1000 < maxSeg) {
+    try {
+      const url =
+        `https://graph.threads.net/v1.0/${creationId}?` +
+        new URLSearchParams({ fields: "status,error_message", access_token: THREADS_ACCESS_TOKEN });
+      const r = await fetch(url);
+      if (r.ok) {
+        const { status, error_message } = await r.json();
+        console.log(`   container ${status}`);
+        if (status === "FINISHED") return;
+        if (status === "ERROR" || status === "EXPIRED") {
+          const erro = new Error(`Container ${status}: ${error_message ?? "sem detalhe"}`);
+          erro.fatal = true;
+          throw erro;
+        }
+      }
+    } catch (e) {
+      if (e.fatal) throw e;
+    }
+    await dormir(5000);
+  }
+  console.warn("   container não confirmou FINISHED a tempo; tentando publicar mesmo assim.");
+}
+
 async function publicarParte(texto, respondeA) {
   const base = `https://graph.threads.net/v1.0/${THREADS_USER_ID}`;
   const corpo = {
@@ -211,17 +240,37 @@ async function publicarParte(texto, respondeA) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(corpo),
   });
-  if (!criar.ok) throw new Error(`Threads (criar) ${criar.status}: ${await criar.text()}`);
+  if (!criar.ok) {
+    const corpoErro = await criar.text();
+    const dica = /"code":\s*190/.test(corpoErro)
+      ? "\n>>> Token do Threads expirado ou inválido. Gere um novo e rode: npm run token:trocar (ou npm run token:renovar)."
+      : "";
+    throw new Error(`Threads (criar) ${criar.status}: ${corpoErro}${dica}`);
+  }
   const { id: creationId } = await criar.json();
 
-  const pub = await fetch(`${base}/threads_publish`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ creation_id: creationId, access_token: THREADS_ACCESS_TOKEN }),
-  });
-  if (!pub.ok) throw new Error(`Threads (publicar) ${pub.status}: ${await pub.text()}`);
-  const { id } = await pub.json();
-  return id;
+  await aguardarContainer(creationId);
+
+  // Mesmo com o container pronto, a Meta às vezes ainda não o enxerga (erro 4279009,
+  // "mídia não encontrada"). Como nada foi publicado, é seguro tentar de novo.
+  const MAX_PUBLICAR = 4;
+  for (let tentativa = 1; tentativa <= MAX_PUBLICAR; tentativa++) {
+    const pub = await fetch(`${base}/threads_publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ creation_id: creationId, access_token: THREADS_ACCESS_TOKEN }),
+    });
+    if (pub.ok) {
+      const { id } = await pub.json();
+      return id;
+    }
+    const corpoErro = await pub.text();
+    if (!corpoErro.includes("4279009") || tentativa === MAX_PUBLICAR) {
+      throw new Error(`Threads (publicar) ${pub.status}: ${corpoErro}`);
+    }
+    console.warn(`   container ainda não disponível; nova tentativa em 15s (${tentativa}/${MAX_PUBLICAR - 1})...`);
+    await dormir(15000);
+  }
 }
 
 async function publicarThread(partes, pausaSeg) {

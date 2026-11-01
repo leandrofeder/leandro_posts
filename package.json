@@ -6,6 +6,8 @@
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node src/index.js",
-    "post": "node src/index.js --publicar"
+    "post": "node src/index.js --publicar",
+    "token:trocar": "node src/token.js trocar",
+    "token:renovar": "node src/token.js renovar"
   }
 }
